@@ -7,7 +7,6 @@ import { formatBytes } from '@/lib/format'
 import type { TrafficLog } from '@/lib/api/types'
 import {
   Card,
-  CardAction,
   CardContent,
   CardHeader,
   CardTitle,
@@ -137,7 +136,7 @@ export function ChartAreaInteractive({ trafficLogs, updatedAtLabel, metaChipClas
             </div>
           </div>
 
-          <CardAction className='flex w-full min-w-0 flex-wrap items-center gap-2 xl:w-auto'>
+          <div className='flex w-full min-w-0 flex-wrap items-center gap-2 xl:w-auto xl:justify-end'>
             <ToggleGroup
               type='single'
               value={timeRange}
@@ -159,7 +158,7 @@ export function ChartAreaInteractive({ trafficLogs, updatedAtLabel, metaChipClas
                 <SelectItem value='7d' className='rounded-lg'>7 天</SelectItem>
               </SelectContent>
             </Select>
-          </CardAction>
+          </div>
         </div>
 
         <div className='grid gap-3 md:grid-cols-3'>
