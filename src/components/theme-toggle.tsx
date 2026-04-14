@@ -9,12 +9,13 @@ export function ThemeToggle() {
   return (
     <Button
       variant='outline'
-      size='sm'
+      size='icon'
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
-      className='gap-2 rounded-full'
+      className='size-9 rounded-full md:h-9 md:w-auto md:gap-2 md:px-3'
     >
       {isDark ? <IconSunHigh className='size-4' /> : <IconMoonStars className='size-4' />}
-      <span>{isDark ? '浅色模式' : '深色模式'}</span>
+      <span className='hidden md:inline'>{isDark ? '浅色模式' : '深色模式'}</span>
+      <span className='sr-only'>{isDark ? '切换到浅色模式' : '切换到深色模式'}</span>
     </Button>
   )
 }

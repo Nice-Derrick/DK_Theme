@@ -31,12 +31,15 @@ export function AuthLayout() {
   return (
     <div className={`grid min-h-screen ${showDesktopGlobe ? 'xl:grid-cols-2' : ''}`}>
       <div className='relative flex flex-col gap-5 px-5 py-6 md:gap-6 md:p-10'>
-        <div className='absolute right-6 top-6 z-10 md:right-10 md:top-10'>
-          <ThemeToggle />
-        </div>
-
-        <div className='flex justify-center gap-2 md:justify-start'>
-          <BrandLogo />
+        <div className='flex items-start justify-between gap-3 pr-0 md:block md:pr-16'>
+          <div className='min-w-0 flex-1 md:flex-none'>
+            <div className='flex min-w-0 justify-start md:justify-start'>
+              <BrandLogo />
+            </div>
+          </div>
+          <div className='shrink-0 md:absolute md:right-10 md:top-10 md:z-10'>
+            <ThemeToggle />
+          </div>
         </div>
 
         <div className='flex flex-1 items-center justify-center'>
