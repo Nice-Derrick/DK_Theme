@@ -7,7 +7,6 @@ import { RouteProgress } from '@/components/route-progress';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AppRouter } from '@/router';
 import { AuthProvider } from '@/features/auth/auth-context';
-import 'flag-icons/css/flag-icons.min.css';
 import './index.css';
 
 const queryClient = new QueryClient({

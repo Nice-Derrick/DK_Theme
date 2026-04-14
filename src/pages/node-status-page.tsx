@@ -16,6 +16,7 @@ import {
 import { getNodeStatuses } from '@/lib/api/services/node-status'
 import type { NodeStatus } from '@/lib/api/types'
 import { appConfig } from '@/lib/config'
+import { getFlagAsset, getRegionBadgeFromText, type FlagCode, type RegionBadge } from '@/lib/flags'
 import { formatDateTime } from '@/lib/format'
 
 type NodeFilter = 'all' | 'online' | 'offline' | 'tagged'
@@ -63,28 +64,18 @@ function getProtocolLabel(node: NodeStatus) {
   }
 }
 
-function getRegionBadge(node: NodeStatus) {
-  const text = `${node.location ?? ''} ${node.name}`
-
-  if (/🇭🇰|香港/i.test(text)) return { code: 'hk', label: '中国香港' }
-  if (/🇯🇵|日本/i.test(text)) return { code: 'jp', label: '日本' }
-  if (/🇸🇬|新加坡/i.test(text)) return { code: 'sg', label: '新加坡' }
-  if (/🇺🇸|美国/i.test(text)) return { code: 'us', label: '美国' }
-  if (/🇹🇼|台湾/i.test(text)) return { code: 'tw', label: '中国台湾' }
-  if (/🇰🇷|韩国/i.test(text)) return { code: 'kr', label: '韩国' }
-  if (/🇬🇧|英国/i.test(text)) return { code: 'gb', label: '英国' }
-  if (/🇩🇪|德国/i.test(text)) return { code: 'de', label: '德国' }
-  return null
+function getRegionBadge(node: NodeStatus): RegionBadge | null {
+  return getRegionBadgeFromText(`${node.location ?? ''} ${node.name}`)
 }
 
-function RegionFlag({ code, label, className = 'h-7 w-9' }: { code: string; label: string; className?: string }) {
+function RegionFlag({ code, label, className = 'h-7 w-9' }: { code: FlagCode; label: string; className?: string }) {
   return (
     <span
       className={`inline-flex shrink-0 overflow-hidden rounded-[8px] border border-black/8 bg-white/90 shadow-[0_8px_24px_rgba(15,23,42,0.08)] ring-1 ring-black/5 dark:border-white/10 dark:bg-white/8 dark:shadow-none dark:ring-white/10 ${className}`}
       aria-label={label}
       title={label}
     >
-      <span className={`fib fi-${code} block h-full w-full`} aria-hidden='true' />
+      <img src={getFlagAsset(code)} alt='' className='block h-full w-full object-cover' loading='lazy' aria-hidden='true' />
     </span>
   )
 }

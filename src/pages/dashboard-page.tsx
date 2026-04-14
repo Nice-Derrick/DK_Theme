@@ -1,7 +1,5 @@
+import { Suspense, lazy } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ChartAreaInteractive } from '@/components/chart-area-interactive'
-import { SectionCards } from '@/components/section-cards'
-import { TrafficWeeklySummary } from '@/components/traffic-weekly-summary'
 import { Badge } from '@/components/ui/badge'
 import {
   Card,
@@ -13,6 +11,52 @@ import { useAuth } from '@/features/auth/auth-context'
 import { getTrafficLogs } from '@/lib/api/services/traffic'
 import { formatBytes, formatCurrency, formatDateTime } from '@/lib/format'
 import { Activity, CalendarClock, CreditCard, Gauge, Layers3, Sparkles, TrendingUp, Zap } from 'lucide-react'
+
+const SectionCards = lazy(() => import('@/components/section-cards').then((module) => ({ default: module.SectionCards })))
+const ChartAreaInteractive = lazy(() => import('@/components/chart-area-interactive').then((module) => ({ default: module.ChartAreaInteractive })))
+const TrafficWeeklySummary = lazy(() => import('@/components/traffic-weekly-summary').then((module) => ({ default: module.TrafficWeeklySummary })))
+
+function DashboardMetricSectionSkeleton() {
+  return (
+    <div className='grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4'>
+      {Array.from({ length: 4 }).map((_, index) => (
+        <Card key={index} className='h-full border-slate-200/80 bg-white/70 shadow-xs dark:border-border/70 dark:bg-background/35'>
+          <CardContent className='space-y-3 p-5'>
+            <div className='h-3 w-20 rounded-full bg-slate-200/80 dark:bg-white/10' />
+            <div className='h-8 w-28 rounded-full bg-slate-200/80 dark:bg-white/10' />
+            <div className='h-3 w-32 rounded-full bg-slate-200/70 dark:bg-white/8' />
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  )
+}
+
+function DashboardChartsSkeleton() {
+  return (
+    <div className='grid min-w-0 gap-6 xl:grid-cols-[1.15fr_0.85fr]'>
+      <Card className='min-w-0 overflow-hidden border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,250,252,0.92))] shadow-sm dark:border-border/70 dark:bg-[linear-gradient(180deg,rgba(17,24,39,0.96),rgba(15,23,42,0.92))]'>
+        <CardContent className='space-y-4 p-6'>
+          <div className='h-6 w-36 rounded-full bg-slate-200/80 dark:bg-white/10' />
+          <div className='grid gap-3 sm:grid-cols-2 2xl:grid-cols-3'>
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className='h-28 rounded-2xl border border-slate-200/80 bg-white/70 dark:border-border/70 dark:bg-background/35' />
+            ))}
+          </div>
+          <div className='h-[320px] rounded-3xl border border-slate-200/70 bg-white/70 dark:border-border/60 dark:bg-background/25' />
+        </CardContent>
+      </Card>
+
+      <Card className='min-w-0 overflow-hidden'>
+        <CardContent className='space-y-4 p-6'>
+          <div className='h-6 w-32 rounded-full bg-slate-200/80 dark:bg-white/10' />
+          <div className='h-[240px] rounded-2xl border border-slate-200/70 bg-white/70 dark:border-border/60 dark:bg-background/25' />
+          <div className='h-4 w-40 rounded-full bg-slate-200/70 dark:bg-white/8' />
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
 
 function formatDashboardUpdatedAt(date: Date) {
   return date.toLocaleTimeString('zh-CN', {
@@ -181,7 +225,9 @@ export function DashboardPage() {
           </div>
         </div>
 
-        <SectionCards />
+        <Suspense fallback={<DashboardMetricSectionSkeleton />}>
+          <SectionCards />
+        </Suspense>
       </section>
 
       <section className='space-y-4 px-4 pb-2 pt-6 lg:px-6 lg:pt-7'>
@@ -205,10 +251,12 @@ export function DashboardPage() {
           </Card>
         ) : null}
 
-        <div className='grid min-w-0 gap-6 xl:grid-cols-[1.15fr_0.85fr]'>
-          <ChartAreaInteractive trafficLogs={trafficLogs} updatedAtLabel={dashboardUpdatedAtLabel} />
-          <TrafficWeeklySummary trafficLogs={trafficLogs} />
-        </div>
+        <Suspense fallback={<DashboardChartsSkeleton />}>
+          <div className='grid min-w-0 gap-6 xl:grid-cols-[1.15fr_0.85fr]'>
+            <ChartAreaInteractive trafficLogs={trafficLogs} updatedAtLabel={dashboardUpdatedAtLabel} />
+            <TrafficWeeklySummary trafficLogs={trafficLogs} />
+          </div>
+        </Suspense>
       </section>
     </>
   )

@@ -1,8 +1,13 @@
-import { useEffect, useState } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Suspense, useEffect, useState } from 'react'
+import { Outlet, useLocation } from 'react-router-dom'
 import { AuthGlobe } from '@/components/auth-globe'
 import { BrandLogo } from '@/components/brand-logo'
+import { RouteChunkErrorBoundary } from '@/components/route-chunk-error-boundary'
 import { ThemeToggle } from '@/components/theme-toggle'
+
+function AuthLayoutOutletFallback() {
+  return <div className='flex min-h-[320px] items-center justify-center text-sm text-muted-foreground'>页面加载中…</div>
+}
 
 function useShowDesktopGlobe() {
   const [show, setShow] = useState(false)
@@ -20,6 +25,8 @@ function useShowDesktopGlobe() {
 
 export function AuthLayout() {
   const showDesktopGlobe = useShowDesktopGlobe()
+  const location = useLocation()
+  const resetKey = `${location.pathname}${location.search}`
 
   return (
     <div className={`grid min-h-screen ${showDesktopGlobe ? 'xl:grid-cols-2' : ''}`}>
@@ -34,7 +41,11 @@ export function AuthLayout() {
 
         <div className='flex flex-1 items-center justify-center'>
           <div className='w-full max-w-md'>
-            <Outlet />
+            <RouteChunkErrorBoundary resetKey={resetKey}>
+              <Suspense fallback={<AuthLayoutOutletFallback />}>
+                <Outlet />
+              </Suspense>
+            </RouteChunkErrorBoundary>
           </div>
         </div>
       </div>

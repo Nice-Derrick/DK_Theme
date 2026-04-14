@@ -1,19 +1,21 @@
+import { lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from '@/components/app-shell';
 import { AuthLayout } from '@/components/auth-layout';
 import { useAuth } from '@/features/auth/auth-context';
-import { ClientsPage } from '@/pages/clients-page';
-import { DashboardPage } from '@/pages/dashboard-page';
-import { InvitePage } from '@/pages/invite-page';
-import { KnowledgePage } from '@/pages/knowledge-page';
-import { LoginPage } from '@/pages/login-page';
-import { NodeStatusPage } from '@/pages/node-status-page';
-import { OrdersPage } from '@/pages/orders-page';
-import { ForgotPasswordPage } from '@/pages/forgot-password-page';
-import { RegisterPage } from '@/pages/register-page';
-import { PlansPage } from '@/pages/plans-page';
-import { SettingsPage } from '@/pages/settings-page';
-import { TicketsPage } from '@/pages/tickets-page';
+
+const ClientsPage = lazy(() => import('@/pages/clients-page').then((module) => ({ default: module.ClientsPage })));
+const DashboardPage = lazy(() => import('@/pages/dashboard-page').then((module) => ({ default: module.DashboardPage })));
+const InvitePage = lazy(() => import('@/pages/invite-page').then((module) => ({ default: module.InvitePage })));
+const KnowledgePage = lazy(() => import('@/pages/knowledge-page').then((module) => ({ default: module.KnowledgePage })));
+const LoginPage = lazy(() => import('@/pages/login-page').then((module) => ({ default: module.LoginPage })));
+const NodeStatusPage = lazy(() => import('@/pages/node-status-page').then((module) => ({ default: module.NodeStatusPage })));
+const OrdersPage = lazy(() => import('@/pages/orders-page').then((module) => ({ default: module.OrdersPage })));
+const ForgotPasswordPage = lazy(() => import('@/pages/forgot-password-page').then((module) => ({ default: module.ForgotPasswordPage })));
+const RegisterPage = lazy(() => import('@/pages/register-page').then((module) => ({ default: module.RegisterPage })));
+const PlansPage = lazy(() => import('@/pages/plans-page').then((module) => ({ default: module.PlansPage })));
+const SettingsPage = lazy(() => import('@/pages/settings-page').then((module) => ({ default: module.SettingsPage })));
+const TicketsPage = lazy(() => import('@/pages/tickets-page').then((module) => ({ default: module.TicketsPage })));
 
 function ProtectedLayout() {
   const { token, hydrated } = useAuth();
