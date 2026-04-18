@@ -4,6 +4,7 @@
 
 演示站：
 - https://dk-theme.vercel.app/
+- 账号密码随意填写
 
 ## 项目特点
 
