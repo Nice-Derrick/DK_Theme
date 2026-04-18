@@ -89,15 +89,6 @@ VITE_ENABLE_MOCK=false
 
 ## 部署
 
-### Vercel
-
-可直接部署到 Vercel，推荐：
-- Framework Preset: Vite
-- Build Command: `npm run build`
-- Output Directory: `dist`
-
-部署前请设置你自己的 `VITE_*` 环境变量。
-
 ### Nginx
 
 ```nginx
