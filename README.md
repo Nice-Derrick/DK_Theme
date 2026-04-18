@@ -5,7 +5,10 @@
 演示站：
 - https://dk-theme.vercel.app/
 - 账号密码随意填写
-
+![](https://pub-56954302827c4850ac0f10fdb853206b.r2.dev/landscape/webp/20260418-2f94ebb2.webp)
+![](https://pub-56954302827c4850ac0f10fdb853206b.r2.dev/landscape/webp/20260418-7aaf7182.webp)
+![](https://pub-56954302827c4850ac0f10fdb853206b.r2.dev/landscape/webp/20260418-7cdc6df1.webp)
+![](https://pub-56954302827c4850ac0f10fdb853206b.r2.dev/landscape/webp/20260418-7debfa7e.webp)
 ## 项目特点
 
 - 支持自定义站点名
