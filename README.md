@@ -1,28 +1,23 @@
 # DK Theme for XBoard / V2Board
 
-A customizable front-end theme for XBoard / V2Board-style panels, built with React, Vite, and TypeScript.
+一个基于 React + Vite + TypeScript 的前端主题工程，适用于 XBoard / V2Board 风格面板，可自行修改站点名、后端地址、客服入口与下载链接后重新构建部署。
 
-Demo: https://dk-theme.vercel.app/
+演示站：
+- https://dk-theme.vercel.app/
 
-## Features
+## 项目特点
 
-- Custom site name
-- Custom API base URL
-- Mock mode for local preview
-- Custom Telegram contact links
-- Custom client download links
-- Ready for self-hosting
+- 支持自定义站点名
+- 支持自定义后端地址
+- 支持 mock 模式本地预览
+- 支持自定义 Telegram 联系方式
+- 支持自定义客户端下载链接
+- 适合自部署与二次开发
+- 主题文件不含广告和任何牛皮癣内容
+- 不做联网验证
+- 源码透明公开，可自行审查与修改
 
-## Tech Stack
-
-- React
-- Vite
-- TypeScript
-- Tailwind CSS
-- TanStack Query
-- Axios
-
-## Quick Start
+## 快速开始
 
 ```bash
 npm install
@@ -30,9 +25,9 @@ cp .env.example .env
 npm run dev
 ```
 
-Open the local dev server, then edit `.env` as needed.
+启动后按需修改 `.env` 配置即可。
 
-## Build
+## 构建
 
 ```bash
 npm install
@@ -40,23 +35,23 @@ cp .env.example .env
 npm run build
 ```
 
-Build output:
+构建产物输出到：
 - `dist/`
 
-Optional release export:
+如需导出独立静态发布目录：
 
 ```bash
 npm run export:release
 ```
 
-## Configuration
+## 常用配置
 
-Main config files:
+主要配置文件：
 - `.env`
 - `.env.example`
 - `src/lib/config.ts`
 
-Example:
+示例：
 
 ```env
 VITE_APP_NAME=Site Name
@@ -72,35 +67,35 @@ VITE_NODE_STATUS_API_PATH=/api/v1/user/server/fetch
 VITE_NODE_STATUS_REFRESH_INTERVAL_MS=15000
 ```
 
-Download links can also be overridden with `VITE_DOWNLOAD_*` variables in `.env`.
+下载链接也支持通过 `.env` 里的 `VITE_DOWNLOAD_*` 变量覆盖。
 
-## Use Your Own Site Name
+## 改成你自己的站点
+
+修改站点名：
 
 ```env
-VITE_APP_NAME=Your Site Name
+VITE_APP_NAME=你的站点名
 ```
 
-## Use Your Own Backend
+改成你自己的后端：
 
 ```env
 VITE_API_BASE_URL=https://your-domain.com
 VITE_ENABLE_MOCK=false
 ```
 
-After changing `.env`, restart dev server or rebuild the project.
+修改 `.env` 后，请重启开发服务器或重新构建。
 
-## Deploy
+## 部署
 
 ### Vercel
 
-This project can be deployed directly to Vercel.
-
-Recommended settings:
+可直接部署到 Vercel，推荐：
 - Framework Preset: Vite
 - Build Command: `npm run build`
 - Output Directory: `dist`
 
-Set your own `VITE_*` environment variables before deploying.
+部署前请设置你自己的 `VITE_*` 环境变量。
 
 ### Nginx
 
@@ -117,17 +112,22 @@ server {
 }
 ```
 
-## Verify Your Config
+## 如何确认配置已生效
 
-1. Check the page title and brand name
-2. Check browser Network requests go to your `VITE_API_BASE_URL`
-3. If you still see demo data, make sure `VITE_ENABLE_MOCK=false`
-4. Run `npm run build` and confirm `dist/` is generated
+1. 检查页面标题和侧边栏品牌名是否变化
+2. 打开浏览器 Network，确认请求是否发往你自己的 `VITE_API_BASE_URL`
+3. 如果仍显示演示数据，请确认 `VITE_ENABLE_MOCK=false`
+4. 运行 `npm run build`，确认成功产出 `dist/`
+
+## 主题定制 / 技术咨询
+
+如需定制主题或技术咨询，请联系：
+- tg@derrickill
 
 ## License
 
 MIT
 
-## Disclaimer
+## 说明
 
-This repository only provides the front-end theme project. It does not include production backend credentials, accounts, or private service data.
+本仓库仅提供前端主题工程，不包含任何生产后端凭据、账号数据或私有服务信息。
