@@ -117,7 +117,8 @@ server {
 
 如需定制主题或技术咨询，请联系：
 
-[@derrickill](https://t.me/derrickill)
+[TG@derrickill](https://t.me/derrickill)
+[官方TG群组](https://t.me/DK_Theme)
 
 ## License
 
