@@ -109,9 +109,10 @@ export function PlansPage() {
   const ordersQuery = useQuery({ queryKey: ['orders'], queryFn: getOrders })
   const [selectedRecurringPeriod, setSelectedRecurringPeriod] = useState<RecurringPeriodKey>('year_price')
 
-  const plans = plansQuery.data ?? []
-  const pendingOrders = (ordersQuery.data ?? []).filter((order) => order.status === 0)
-  const processingOrders = (ordersQuery.data ?? []).filter((order) => order.status === 1)
+  const plans = useMemo(() => plansQuery.data ?? [], [plansQuery.data])
+  const orders = useMemo(() => ordersQuery.data ?? [], [ordersQuery.data])
+  const pendingOrders = orders.filter((order) => order.status === 0)
+  const processingOrders = orders.filter((order) => order.status === 1)
   const latestPendingOrder = pendingOrders[0]
   const latestProcessingOrder = processingOrders[0]
   const currentPlanName = subscribe?.plan ?? user?.plan ?? '未选择套餐'

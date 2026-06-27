@@ -170,7 +170,7 @@ function renderKnowledgeBody(body?: string) {
           return <div key={`divider-${index}`} className='my-1 border-t border-slate-200/80 dark:border-border/70' />
         }
 
-        if (/^[^\[]+[：:]$/.test(line)) {
+        if (/^[^[]+[：:]$/.test(line)) {
           return (
             <div key={`heading-${index}`} className='pt-1 text-sm font-semibold text-slate-900 dark:text-foreground'>
               {line}

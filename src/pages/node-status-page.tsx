@@ -92,7 +92,7 @@ function formatNodeDisplayName(name: string) {
     .replace(/专线(\d+)-(\d+)/g, '专线 $1-$2')
     .replace(/[_-]/g, ' · ')
     .replace(/\s+/g, ' ')
-    .replace(/ ·  /g, ' · ')
+    .replace(/ · {2}/g, ' · ')
     .trim()
 }
 

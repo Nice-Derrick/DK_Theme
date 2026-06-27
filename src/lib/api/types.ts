@@ -126,6 +126,15 @@ export type TicketDetail = {
   message: TicketMessage[];
 };
 
+export type InviteCommissionRecord = {
+  id: string;
+  title: string;
+  amount: number;
+  created_at: number;
+  type: 'commission' | 'withdraw' | 'transfer';
+  status: 'success' | 'pending';
+};
+
 export type InviteStat = {
   codes: Array<{ code: string; status: number; created_at: number }>;
   stat: {
@@ -133,6 +142,7 @@ export type InviteStat = {
     commission_pending: number;
     invite_count: number;
   };
+  records?: InviteCommissionRecord[];
 };
 
 export type NodeStatus = {

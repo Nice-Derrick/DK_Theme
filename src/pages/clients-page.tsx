@@ -324,7 +324,7 @@ export function ClientsPage() {
       setCopied(true)
       toast.success('订阅链接已复制到剪贴板')
       window.setTimeout(() => setCopied(false), 1500)
-    } catch (_) {
+    } catch {
       toast.error('复制失败，请手动复制订阅链接')
       setCopied(false)
     }

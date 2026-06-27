@@ -10,9 +10,24 @@ type RawInviteCode = {
   created_at: number
 }
 
+type RawCommissionRecord = {
+  id?: string | number
+  trade_no?: string
+  title?: string
+  type?: string | number
+  status?: string | number | boolean
+  amount?: number
+  get_amount?: number
+  created_at?: number
+  updated_at?: number
+}
+
 type RawInviteFetchData = {
   codes?: RawInviteCode[]
   stat?: [number?, number?, number?, number?, number?]
+  records?: RawCommissionRecord[]
+  commission_logs?: RawCommissionRecord[]
+  commission_log?: RawCommissionRecord[]
 }
 
 type ApiStatus = string | number | undefined
@@ -24,6 +39,22 @@ type ApiFailureEnvelope = {
   data?: unknown
   status?: string | number
   error?: string | null
+}
+
+type CommConfigPayload = {
+  withdraw_methods?: string[]
+  withdraw_close?: number | boolean
+  currency?: string
+  currency_symbol?: string
+}
+
+export type WithdrawCommissionInput = {
+  method: string
+  account: string
+}
+
+export type TransferCommissionInput = {
+  amount: number
 }
 
 function isApiSuccess(status: ApiStatus) {
@@ -38,6 +69,14 @@ function getApiErrorMessage<T>(response: ApiEnvelope<T>, fallback: string) {
     return response.message || fallback
   }
   return null
+}
+
+function assertApiSuccess<T>(response: ApiEnvelope<T>, fallback: string) {
+  const errorMessage = getApiErrorMessage(response, fallback)
+  if (errorMessage) {
+    throw new Error(errorMessage)
+  }
+  return response.data
 }
 
 function getAxiosErrorMessage(error: unknown, fallback: string) {
@@ -62,12 +101,45 @@ function normalizeInviteCode(item: RawInviteCode) {
   }
 }
 
+function normalizeRecordStatus(status: RawCommissionRecord['status']) {
+  if (status === true || status === 1 || status === '1' || status === 'success' || status === 'paid') return 'success' as const
+  return 'pending' as const
+}
+
+function normalizeRecordType(type: RawCommissionRecord['type']) {
+  if (type === 'withdraw' || type === 1 || type === '1') return 'withdraw' as const
+  if (type === 'transfer' || type === 2 || type === '2') return 'transfer' as const
+  return 'commission' as const
+}
+
+function normalizeCommissionRecord(item: RawCommissionRecord, index: number) {
+  const type = normalizeRecordType(item.type)
+  const amount = Number(item.get_amount ?? item.amount ?? 0)
+  const createdAt = Number(item.created_at ?? item.updated_at ?? 0)
+  const id = item.id ?? item.trade_no ?? `${type}-${createdAt || index}`
+
+  return {
+    id: String(id),
+    title: item.title || (item.trade_no ? `订单 ${item.trade_no} 返佣` : '推广佣金记录'),
+    amount,
+    created_at: createdAt,
+    type,
+    status: normalizeRecordStatus(item.status),
+  }
+}
+
 function sortInviteCodes<T extends { created_at: number }>(codes: T[]) {
   return [...codes].sort((a, b) => b.created_at - a.created_at)
 }
 
+function sortRecords<T extends { created_at: number }>(records: T[]) {
+  return [...records].sort((a, b) => b.created_at - a.created_at)
+}
+
 function normalizeInviteStat(data: RawInviteFetchData): InviteStat {
   const rawStat = Array.isArray(data.stat) ? data.stat : []
+  const rawRecords = data.records ?? data.commission_logs ?? data.commission_log ?? []
+
   return {
     codes: sortInviteCodes((data.codes ?? []).map(normalizeInviteCode)),
     stat: {
@@ -75,6 +147,7 @@ function normalizeInviteStat(data: RawInviteFetchData): InviteStat {
       commission_balance: Number(rawStat[1] ?? 0),
       commission_pending: Number(rawStat[2] ?? 0),
     },
+    records: sortRecords(rawRecords.map(normalizeCommissionRecord)),
   }
 }
 
@@ -86,10 +159,7 @@ async function requestInviteCode(method: 'get' | 'post') {
 }
 
 function normalizeInviteSaveResponse(response: ApiEnvelope<InviteSaveResult>) {
-  const errorMessage = getApiErrorMessage(response, '生成邀请码失败')
-  if (errorMessage) {
-    throw new Error(errorMessage)
-  }
+  assertApiSuccess(response, '生成邀请码失败')
 
   const payload = response.data
   if (payload == null || payload === false) {
@@ -106,11 +176,21 @@ function normalizeInviteSaveResponse(response: ApiEnvelope<InviteSaveResult>) {
 export async function getInviteStat() {
   if (appConfig.enableMock) return mockInvite;
   const response = await apiClient.get<ApiEnvelope<RawInviteFetchData>>('/api/v1/user/invite/fetch');
-  const errorMessage = getApiErrorMessage(response.data, '获取邀请码信息失败')
-  if (errorMessage) {
-    throw new Error(errorMessage)
+  const payload = assertApiSuccess(response.data, '获取邀请码信息失败')
+  return normalizeInviteStat(payload ?? {});
+}
+
+export async function getCommissionConfig() {
+  if (appConfig.enableMock) {
+    return { withdraw_methods: ['alipay', 'usdt', 'paypal'], withdraw_close: 0 }
   }
-  return normalizeInviteStat(response.data.data ?? {});
+
+  try {
+    const response = await apiClient.get<ApiEnvelope<CommConfigPayload>>('/api/v1/user/comm/config')
+    return assertApiSuccess(response.data, '获取佣金配置失败') ?? {}
+  } catch (error) {
+    throw new Error(getAxiosErrorMessage(error, '获取佣金配置失败'))
+  }
 }
 
 export async function generateInviteCode() {
@@ -130,5 +210,36 @@ export async function generateInviteCode() {
     }
 
     throw new Error(getAxiosErrorMessage(error, '生成邀请码失败'))
+  }
+}
+
+export async function withdrawCommission(input: WithdrawCommissionInput) {
+  if (appConfig.enableMock) return { success: true }
+
+  try {
+    const response = await apiClient.post<ApiEnvelope<boolean>>('/api/v1/user/ticket/withdraw', {
+      withdraw_method: input.method,
+      withdraw_account: input.account,
+    })
+    const payload = assertApiSuccess(response.data, '提交提现申请失败')
+    if (payload === false) throw new Error(response.data.message || '提交提现申请失败')
+    return { success: true }
+  } catch (error) {
+    throw new Error(getAxiosErrorMessage(error, '提交提现申请失败'))
+  }
+}
+
+export async function transferCommission(input: TransferCommissionInput) {
+  if (appConfig.enableMock) return { success: true }
+
+  try {
+    const response = await apiClient.post<ApiEnvelope<boolean>>('/api/v1/user/transfer', {
+      transfer_amount: input.amount,
+    })
+    const payload = assertApiSuccess(response.data, '佣金划转失败')
+    if (payload === false) throw new Error(response.data.message || '佣金划转失败')
+    return { success: true }
+  } catch (error) {
+    throw new Error(getAxiosErrorMessage(error, '佣金划转失败'))
   }
 }

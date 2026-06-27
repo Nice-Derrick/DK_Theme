@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Gift, Link as LinkIcon, Plus, ReceiptText, Users, Wallet } from 'lucide-react'
 import { toast } from 'sonner'
@@ -22,28 +22,24 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { copyText } from '@/lib/clipboard'
-import { generateInviteCode, getInviteStat } from '@/lib/api/services/invite'
+import {
+  generateInviteCode,
+  getCommissionConfig,
+  getInviteStat,
+  transferCommission,
+  withdrawCommission,
+} from '@/lib/api/services/invite'
 import { formatCurrency, formatDateTime } from '@/lib/format'
+import type { InviteCommissionRecord } from '@/lib/api/types'
 
-type WithdrawalChannel = 'alipay' | 'usdt' | 'paypal'
-
-type CommissionRecord = {
-  id: string
-  title: string
-  amount: number
-  created_at: number
-  type: 'commission' | 'withdraw' | 'transfer'
-  status: 'success' | 'pending'
-  channel?: WithdrawalChannel
-  account?: string
-}
+type WithdrawalChannel = string
 
 function getInviteLink(code?: string) {
   if (!code || typeof window === 'undefined') return ''
   return `${window.location.origin}/register?code=${encodeURIComponent(code)}`
 }
 
-function getRecordTypeLabel(type: CommissionRecord['type']) {
+function getRecordTypeLabel(type: InviteCommissionRecord['type']) {
   switch (type) {
     case 'commission':
       return '佣金发放'
@@ -62,49 +58,33 @@ function getWithdrawalChannelLabel(channel?: WithdrawalChannel) {
       return 'USDT'
     case 'paypal':
       return 'PayPal'
+    case 'wechat':
+      return '微信'
+    case 'bank':
+      return '银行卡'
     default:
-      return ''
+      return channel || ''
   }
 }
 
 export function InvitePage() {
   const queryClient = useQueryClient()
   const inviteQuery = useQuery({ queryKey: ['invite'], queryFn: getInviteStat })
+  const commConfigQuery = useQuery({ queryKey: ['commission-config'], queryFn: getCommissionConfig })
   const invite = inviteQuery.data
+  const withdrawMethods = commConfigQuery.data?.withdraw_methods?.length
+    ? commConfigQuery.data.withdraw_methods
+    : ['alipay', 'usdt', 'paypal']
 
   const [withdrawOpen, setWithdrawOpen] = useState(false)
   const [transferOpen, setTransferOpen] = useState(false)
   const [withdrawChannel, setWithdrawChannel] = useState<WithdrawalChannel>('alipay')
   const [withdrawAccount, setWithdrawAccount] = useState('')
   const [transferAmount, setTransferAmount] = useState('')
-  const [commissionBalance, setCommissionBalance] = useState(0)
-  const [commissionPending, setCommissionPending] = useState(0)
-  const [records, setRecords] = useState<CommissionRecord[]>([])
 
-  useEffect(() => {
-    if (!invite) return
-    setCommissionBalance(invite.stat.commission_balance)
-    setCommissionPending(invite.stat.commission_pending)
-    setRecords([
-      {
-        id: 'commission-1',
-        title: '邀请用户 INVITE-PLUS 产生返佣',
-        amount: 1800,
-        created_at: 1712731200,
-        type: 'commission',
-        status: 'success',
-      },
-      {
-        id: 'commission-2',
-        title: '邀请用户 INVITE-GIFT 订单待结算',
-        amount: 1200,
-        created_at: 1712698920,
-        type: 'commission',
-        status: 'pending',
-      },
-    ])
-  }, [invite])
-
+  const commissionBalance = invite?.stat.commission_balance ?? 0
+  const commissionPending = invite?.stat.commission_pending ?? 0
+  const records = invite?.records ?? []
   const hasAvailableInviteCode = Boolean(invite?.codes.some((item) => item.status === 0))
   const primaryCode = invite?.codes.find((item) => item.status === 0)?.code ?? invite?.codes[0]?.code
   const primaryInviteLink = useMemo(() => getInviteLink(primaryCode), [primaryCode])
@@ -147,8 +127,43 @@ export function InvitePage() {
   }
 
 
+  const withdrawMutation = useMutation({
+    mutationFn: withdrawCommission,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['invite'] })
+      setWithdrawChannel(withdrawMethods[0] ?? 'alipay')
+      setWithdrawAccount('')
+      setWithdrawOpen(false)
+      toast.success('提现申请已提交')
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : '提交提现申请失败'
+      toast.error(message)
+    },
+  })
+
+  const transferMutation = useMutation({
+    mutationFn: transferCommission,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['invite'] })
+      await queryClient.invalidateQueries({ queryKey: ['user'] })
+      setTransferAmount('')
+      setTransferOpen(false)
+      toast.success('佣金已划转到余额')
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : '佣金划转失败'
+      toast.error(message)
+    },
+  })
+
   function handleWithdraw() {
     const account = withdrawAccount.trim()
+
+    if (commConfigQuery.data?.withdraw_close) {
+      toast.error('当前站点已关闭提现')
+      return
+    }
 
     if (!withdrawChannel) {
       toast.error('请选择提现渠道')
@@ -165,57 +180,24 @@ export function InvitePage() {
       return
     }
 
-    const channelLabel = getWithdrawalChannelLabel(withdrawChannel)
-    const amount = commissionBalance
-
-    setCommissionBalance(0)
-    setRecords((prev) => [
-      {
-        id: `withdraw-${Date.now()}`,
-        title: `${channelLabel} 提现申请`,
-        amount: Math.round(amount * 100),
-        created_at: Math.floor(Date.now() / 1000),
-        type: 'withdraw',
-        status: 'pending',
-        channel: withdrawChannel,
-        account,
-      },
-      ...prev,
-    ])
-    setWithdrawChannel('alipay')
-    setWithdrawAccount('')
-    setWithdrawOpen(false)
-    toast.success(`已提交${channelLabel}提现申请`)
+    withdrawMutation.mutate({ method: withdrawChannel, account })
   }
 
   function handleTransfer() {
-    const amount = Number(transferAmount)
+    const amountInYuan = Number(transferAmount)
+    const amountInCents = Math.round(amountInYuan * 100)
 
-    if (!amount || amount <= 0) {
+    if (!Number.isFinite(amountInYuan) || amountInCents <= 0) {
       toast.error('请输入正确的划转金额')
       return
     }
 
-    if (amount > commissionBalance) {
+    if (amountInCents > commissionBalance) {
       toast.error('划转金额不能超过当前可提现返利')
       return
     }
 
-    setCommissionBalance((value) => Number((value - amount).toFixed(2)))
-    setRecords((prev) => [
-      {
-        id: `transfer-${Date.now()}`,
-        title: '推广佣金划转到余额',
-        amount: Math.round(amount * 100),
-        created_at: Math.floor(Date.now() / 1000),
-        type: 'transfer',
-        status: 'success',
-      },
-      ...prev,
-    ])
-    setTransferAmount('')
-    setTransferOpen(false)
-    toast.success('佣金已划转到余额')
+    transferMutation.mutate({ amount: amountInCents })
   }
 
   return (
@@ -314,11 +296,23 @@ export function InvitePage() {
                 <CardDescription>提现与余额划转</CardDescription>
               </CardHeader>
               <CardContent className='grid gap-3 sm:grid-cols-2'>
-                <Button className='w-full rounded-2xl' onClick={() => setWithdrawOpen(true)}>
+                <Button
+                  className='w-full rounded-2xl'
+                  onClick={() => {
+                    if (!withdrawMethods.includes(withdrawChannel)) setWithdrawChannel(withdrawMethods[0] ?? 'alipay')
+                    setWithdrawOpen(true)
+                  }}
+                  disabled={availableBalanceInCents <= 0 || Boolean(commConfigQuery.data?.withdraw_close)}
+                >
                   <Wallet className='size-4' />
                   推广佣金提现
                 </Button>
-                <Button variant='outline' className='w-full rounded-2xl bg-white/90 dark:bg-transparent' onClick={() => setTransferOpen(true)}>
+                <Button
+                  variant='outline'
+                  className='w-full rounded-2xl bg-white/90 dark:bg-transparent'
+                  onClick={() => setTransferOpen(true)}
+                  disabled={availableBalanceInCents <= 0}
+                >
                   <Gift className='size-4' />
                   划转到余额
                 </Button>
@@ -342,7 +336,7 @@ export function InvitePage() {
                   <ReceiptText className='size-4 text-primary' />
                   佣金发放记录
                 </div>
-                {records.map((item) => (
+                {records.length > 0 ? records.map((item) => (
                   <div
                     key={item.id}
                     className='flex flex-col gap-3 rounded-3xl border border-slate-200/80 bg-slate-50/85 p-5 dark:border-border/70 dark:bg-background/35 md:flex-row md:items-center md:justify-between'
@@ -363,15 +357,14 @@ export function InvitePage() {
                         </Badge>
                       </div>
                       <div className='text-sm text-slate-500 dark:text-muted-foreground'>记录时间：{formatDateTime(item.created_at)}</div>
-                      {item.type === 'withdraw' && item.channel && item.account ? (
-                        <div className='break-all text-sm text-slate-500 dark:text-muted-foreground'>
-                          提现渠道：{getWithdrawalChannelLabel(item.channel)} · 账号：{item.account}
-                        </div>
-                      ) : null}
                     </div>
                     <div className='text-lg font-semibold text-slate-900 dark:text-foreground'>{formatCurrency(item.amount)}</div>
                   </div>
-                ))}
+                )) : (
+                  <div className='rounded-3xl border border-dashed border-slate-200/90 bg-slate-50/70 p-6 text-sm text-slate-500 dark:border-border/70 dark:bg-background/25 dark:text-muted-foreground'>
+                    当前后端未返回佣金明细记录。这里不会再显示代码内置样例；可提现与待结算金额以上方真实统计为准。
+                  </div>
+                )}
               </div>
 
 
@@ -398,9 +391,9 @@ export function InvitePage() {
                     <SelectValue placeholder='请选择提现渠道' />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value='alipay'>支付宝</SelectItem>
-                    <SelectItem value='usdt'>USDT</SelectItem>
-                    <SelectItem value='paypal'>PayPal</SelectItem>
+                    {withdrawMethods.map((method) => (
+                      <SelectItem key={method} value={method}>{getWithdrawalChannelLabel(method) || method}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -418,7 +411,9 @@ export function InvitePage() {
               本次申请金额：{formatCurrency(availableBalanceInCents)}
             </div>
             <div className='flex flex-col gap-3 sm:flex-row'>
-              <Button className='w-full sm:w-auto' onClick={handleWithdraw}>提交提现</Button>
+              <Button className='w-full sm:w-auto' onClick={handleWithdraw} disabled={withdrawMutation.isPending}>
+                {withdrawMutation.isPending ? '提交中…' : '提交提现'}
+              </Button>
               <Button variant='outline' className='w-full bg-white/90 sm:w-auto dark:bg-transparent' onClick={() => setWithdrawOpen(false)}>取消</Button>
             </div>
           </div>
@@ -445,7 +440,9 @@ export function InvitePage() {
               className='bg-white/90 dark:bg-input/30'
             />
             <div className='flex flex-col gap-3 sm:flex-row'>
-              <Button className='w-full sm:w-auto' onClick={handleTransfer}>确认划转</Button>
+              <Button className='w-full sm:w-auto' onClick={handleTransfer} disabled={transferMutation.isPending}>
+                {transferMutation.isPending ? '划转中…' : '确认划转'}
+              </Button>
               <Button variant='outline' className='w-full bg-white/90 sm:w-auto dark:bg-transparent' onClick={() => setTransferOpen(false)}>取消</Button>
             </div>
           </div>
