@@ -210,17 +210,15 @@ export function OrdersPage() {
   const checkoutOrderMutation = useMutation({
     mutationFn: checkoutOrder,
     onSuccess: (checkoutUrl, variables) => {
-      toast.success('正在跳转支付')
       setPaymentDialogOpen(false)
-      queryClient.setQueryData<Order[]>(['orders'], (current) => sortOrders((current ?? []).map((item) => (
-        item.trade_no === variables.trade_no ? { ...item, status: 1 } : item
-      ))))
-      queryClient.setQueryData<OrderDetail | undefined>(['order-detail', variables.trade_no], (current) => current ? { ...current, status: 1 } : current)
-      void queryClient.invalidateQueries({ queryKey: ['orders'], refetchType: 'inactive' })
-      void queryClient.invalidateQueries({ queryKey: ['order-detail', variables.trade_no], refetchType: 'inactive' })
+      void queryClient.invalidateQueries({ queryKey: ['orders'] })
+      void queryClient.invalidateQueries({ queryKey: ['order-detail', variables.trade_no] })
       if (checkoutUrl) {
-        window.open(checkoutUrl, '_blank', 'noopener,noreferrer')
+        toast.success('正在跳转支付')
+        window.location.assign(checkoutUrl)
+        return
       }
+      toast.error('支付接口未返回跳转链接，请稍后重试')
     },
     onError: (error) => {
       toast.error(getErrorMessage(error, '发起支付失败，请稍后重试'))
